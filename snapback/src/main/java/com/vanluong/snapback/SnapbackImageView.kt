@@ -6,7 +6,6 @@ import android.graphics.Color
 import android.graphics.Point
 import android.graphics.PointF
 import android.util.AttributeSet
-import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.MotionEvent.ACTION_CANCEL
@@ -24,7 +23,6 @@ import androidx.appcompat.widget.AppCompatImageView
 import kotlin.math.max
 import kotlin.math.min
 
-
 /**
  * Created by van.luong
  * on 21,May,2025
@@ -33,15 +31,13 @@ class SnapbackImageView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
-) : AppCompatImageView(context, attrs, defStyleAttr),
-    ScaleGestureDetector.OnScaleGestureListener {
+) : AppCompatImageView(context, attrs, defStyleAttr), ScaleGestureDetector.OnScaleGestureListener {
     private var shadow: View? = null
     private var zoomableImageView: ImageView? = null
     private val decorView: ViewGroup by lazy {
         (context as Activity).window.decorView as ViewGroup
     }
 
-    private var mCurrentMovementMidPoint = PointF()
     private var mInitialPinchMidPoint = PointF()
     private var mTargetViewCords = Point()
 
@@ -167,7 +163,7 @@ class SnapbackImageView @JvmOverloads constructor(
         visibility = VISIBLE
 
         zoomableImageView = null
-        mCurrentMovementMidPoint = PointF()
+        shadow = null
         mInitialPinchMidPoint = PointF()
         state = ZoomState.Idle
     }
@@ -195,8 +191,6 @@ class SnapbackImageView @JvmOverloads constructor(
     }
 
     override fun onScale(detector: ScaleGestureDetector): Boolean {
-        Log.d("SNAPBACK", "onScale: ")
-
         if (zoomableImageView == null) {
             return false
         }
@@ -211,7 +205,6 @@ class SnapbackImageView @JvmOverloads constructor(
         }
 
         obscureDecorView(scaleFactor)
-
         return true
     }
 
@@ -221,6 +214,14 @@ class SnapbackImageView @JvmOverloads constructor(
 
     override fun onScaleEnd(detector: ScaleGestureDetector) {
         scaleFactor = 1f
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        zoomableImageView?.let { removeFromDecorView(it) }
+        shadow?.let { removeFromDecorView(it) }
+        zoomableImageView = null
+        shadow = null
     }
 
     private fun obscureDecorView(factor: Float) {
