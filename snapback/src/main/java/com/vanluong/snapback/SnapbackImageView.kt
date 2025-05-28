@@ -53,6 +53,19 @@ class SnapbackImageView @JvmOverloads constructor(
     private var shadowEnabled = true
     private var minScaleFactor = MIN_SCALE_FACTOR
     private var maxScaleFactor = MAX_SCALE_FACTOR
+    private var endAnimationEnabled = true
+    private var endAnimationDuration: Long = 300L
+
+    private var endAction: (() -> Unit) = {
+        removeFromDecorView(zoomableImageView!!)
+        removeFromDecorView(shadow!!)
+        visibility = VISIBLE
+
+        zoomableImageView = null
+        shadow = null
+        mInitialPinchMidPoint = PointF()
+        state = ZoomState.Idle
+    }
 
     init {
         context.theme.obtainStyledAttributes(attrs, R.styleable.SnapbackImageView, 0, 0).apply {
@@ -77,6 +90,14 @@ class SnapbackImageView @JvmOverloads constructor(
                     R.styleable.SnapbackImageView_maxScaleFactor,
                     MAX_SCALE_FACTOR
                 )
+                endAnimationEnabled = getBoolean(
+                    R.styleable.SnapbackImageView_endAnimationEnabled,
+                    true
+                )
+                endAnimationDuration = getInt(
+                    R.styleable.SnapbackImageView_endAnimationDuration,
+                    300
+                ).toLong()
             } finally {
                 recycle()
             }
@@ -124,7 +145,7 @@ class SnapbackImageView @JvmOverloads constructor(
             ACTION_UP, ACTION_POINTER_UP, ACTION_CANCEL -> {
                 when (state) {
                     ZoomState.Zooming -> {
-                        endZoomOverlay()
+                        endZoomOverlay(endAction)
                         state = ZoomState.Idle
                     }
 
@@ -214,15 +235,22 @@ class SnapbackImageView @JvmOverloads constructor(
         addToDecorView(zoomableImageView!!)
     }
 
-    private fun endZoomOverlay() {
-        removeFromDecorView(zoomableImageView!!)
-        removeFromDecorView(shadow!!)
-        visibility = VISIBLE
+    private inline fun endZoomOverlay(crossinline endAction: () -> Unit) {
+        if (!endAnimationEnabled) {
+            endAction()
+            return
+        }
 
-        zoomableImageView = null
-        shadow = null
-        mInitialPinchMidPoint = PointF()
-        state = ZoomState.Idle
+        zoomableImageView?.animate()?.apply {
+            x(mTargetViewCords.x.toFloat())
+            y(mTargetViewCords.y.toFloat())
+            scaleX(1f)
+            scaleY(1f)
+            duration = endAnimationDuration
+            withEndAction {
+                endAction()
+            }
+        }?.start()
     }
 
     private fun obscureDecorView(factor: Float) {
