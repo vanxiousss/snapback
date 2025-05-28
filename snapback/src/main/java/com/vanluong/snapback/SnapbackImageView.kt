@@ -6,7 +6,6 @@ import android.graphics.Color
 import android.graphics.Point
 import android.graphics.PointF
 import android.util.AttributeSet
-import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.MotionEvent.ACTION_CANCEL
 import android.view.MotionEvent.ACTION_DOWN
@@ -45,26 +44,49 @@ class SnapbackImageView @JvmOverloads constructor(
         ScaleGestureDetector(context, this)
     }
 
-    private val gestureDetector: GestureDetector by lazy {
-        GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onSingleTapUp(e: MotionEvent): Boolean {
-                performClick()
-                return true
-            }
-        })
-    }
-
     private var scaleFactor = 1f
     private var state: ZoomState = ZoomState.Idle
+
+    // Attributes
+    private var maxShadowAlpha: Int = 192 // Default max alpha for shadow
+    private var shadowColor: Int = Color.argb(maxShadowAlpha, 0, 0, 0)
+    private var shadowEnabled = true
+    private var minScaleFactor = MIN_SCALE_FACTOR
+    private var maxScaleFactor = MAX_SCALE_FACTOR
+
+    init {
+        context.theme.obtainStyledAttributes(attrs, R.styleable.SnapbackImageView, 0, 0).apply {
+            try {
+                shadowColor = getColor(
+                    R.styleable.SnapbackImageView_shadowColor,
+                    Color.argb(0, 0, 0, 0)
+                )
+                maxShadowAlpha = getInt(
+                    R.styleable.SnapbackImageView_shadowMaxAlpha,
+                    192
+                )
+                shadowEnabled = getBoolean(
+                    R.styleable.SnapbackImageView_shadowFadeEnabled,
+                    true
+                )
+                minScaleFactor = getFloat(
+                    R.styleable.SnapbackImageView_minScaleFactor,
+                    MIN_SCALE_FACTOR
+                )
+                maxScaleFactor = getFloat(
+                    R.styleable.SnapbackImageView_maxScaleFactor,
+                    MAX_SCALE_FACTOR
+                )
+            } finally {
+                recycle()
+            }
+        }
+    }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         if (event == null) return false
 
         val scaleHandled = scaleGestureDetector.onTouchEvent(event)
-        val gestureHandled = gestureDetector.onTouchEvent(event)
-
-        val finalHandle = scaleHandled || gestureHandled
-
         val action: Int = event.action and MotionEvent.ACTION_MASK
 
         when (action) {
@@ -117,7 +139,41 @@ class SnapbackImageView @JvmOverloads constructor(
             }
         }
 
-        return finalHandle
+        return super.onTouchEvent(event) || scaleHandled
+    }
+
+    override fun onScale(detector: ScaleGestureDetector): Boolean {
+        if (zoomableImageView == null) {
+            return false
+        }
+
+        // Update the scale factor
+        scaleFactor *= detector.scaleFactor
+        scaleFactor = max(minScaleFactor, min(scaleFactor, maxScaleFactor))
+
+        zoomableImageView!!.apply {
+            this.scaleX = scaleFactor
+            this.scaleY = scaleFactor
+        }
+
+        obscureDecorView(scaleFactor)
+        return true
+    }
+
+    override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
+        return zoomableImageView != null
+    }
+
+    override fun onScaleEnd(detector: ScaleGestureDetector) {
+        scaleFactor = 1f
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        zoomableImageView?.let { removeFromDecorView(it) }
+        shadow?.let { removeFromDecorView(it) }
+        zoomableImageView = null
+        shadow = null
     }
 
     private fun addToDecorView(v: View) {
@@ -136,11 +192,12 @@ class SnapbackImageView @JvmOverloads constructor(
         }
 
         mTargetViewCords = getViewAbsoluteCords(this)
-        zoomableImageView!!.pivotX = mInitialPinchMidPoint.x
-        zoomableImageView!!.pivotY = mInitialPinchMidPoint.y
-
-        zoomableImageView!!.x = mTargetViewCords.x.toFloat()
-        zoomableImageView!!.y = mTargetViewCords.y.toFloat()
+        zoomableImageView!!.apply {
+            this.pivotX = mInitialPinchMidPoint.x
+            this.pivotY = mInitialPinchMidPoint.y
+            this.x = mTargetViewCords.x.toFloat()
+            this.y = mTargetViewCords.y.toFloat()
+        }
 
         if (shadow == null) shadow = View(context).apply {
             this.layoutParams = ViewGroup.LayoutParams(
@@ -168,6 +225,29 @@ class SnapbackImageView @JvmOverloads constructor(
         state = ZoomState.Idle
     }
 
+    private fun obscureDecorView(factor: Float) {
+        var normalizedValue =
+            (factor - minScaleFactor) / (maxScaleFactor - minScaleFactor)
+        normalizedValue = min(0.75, (normalizedValue * 2).toDouble()).toFloat()
+
+        val currentAlpha = (normalizedValue * maxShadowAlpha).toInt()
+
+        val obscure = Color.argb(
+            currentAlpha,
+            Color.red(shadowColor),
+            Color.green(shadowColor),
+            Color.blue(shadowColor)
+        )
+        shadow?.setBackgroundColor(obscure)
+    }
+
+    private fun disableParentTouch(view: ViewParent) {
+        view.requestDisallowInterceptTouchEvent(true)
+        if (view.parent != null) {
+            disableParentTouch(view.parent)
+        }
+    }
+
     companion object {
         private const val MIN_SCALE_FACTOR = 1f
         private const val MAX_SCALE_FACTOR = 5f
@@ -187,55 +267,6 @@ class SnapbackImageView @JvmOverloads constructor(
             val y = location[1]
 
             return Point(x, y)
-        }
-    }
-
-    override fun onScale(detector: ScaleGestureDetector): Boolean {
-        if (zoomableImageView == null) {
-            return false
-        }
-
-        // Update the scale factor
-        scaleFactor *= detector.scaleFactor
-        scaleFactor = max(MIN_SCALE_FACTOR, min(scaleFactor, MAX_SCALE_FACTOR))
-
-        zoomableImageView!!.apply {
-            this.scaleX = scaleFactor
-            this.scaleY = scaleFactor
-        }
-
-        obscureDecorView(scaleFactor)
-        return true
-    }
-
-    override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
-        return zoomableImageView != null
-    }
-
-    override fun onScaleEnd(detector: ScaleGestureDetector) {
-        scaleFactor = 1f
-    }
-
-    override fun onDetachedFromWindow() {
-        super.onDetachedFromWindow()
-        zoomableImageView?.let { removeFromDecorView(it) }
-        shadow?.let { removeFromDecorView(it) }
-        zoomableImageView = null
-        shadow = null
-    }
-
-    private fun obscureDecorView(factor: Float) {
-        var normalizedValue =
-            (factor - MIN_SCALE_FACTOR) / (MAX_SCALE_FACTOR - MIN_SCALE_FACTOR)
-        normalizedValue = min(0.75, (normalizedValue * 2).toDouble()).toFloat()
-        val obscure = Color.argb((normalizedValue * 255).toInt(), 0, 0, 0)
-        shadow?.setBackgroundColor(obscure)
-    }
-
-    private fun disableParentTouch(view: ViewParent) {
-        view.requestDisallowInterceptTouchEvent(true)
-        if (view.parent != null) {
-            disableParentTouch(view.parent)
         }
     }
 }
