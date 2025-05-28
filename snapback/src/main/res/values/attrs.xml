@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="SnapbackImageView">
+        <attr name="shadowColor" format="color" />
+        <attr name="shadowMaxAlpha" format="integer" />
+        <attr name="minScaleFactor" format="float" />
+        <attr name="maxScaleFactor" format="float" />
+        <attr name="shadowFadeEnabled" format="boolean" />
+        <attr name="endAnimationEnabled" format="boolean" />
+        <attr name="endAnimationDuration" format="integer" />
+    </declare-styleable>
+</resources>
