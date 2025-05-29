@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-//        val mZoomableView = findViewById<ImageView>(R.id.test)
+        val mZoomableView = findViewById<SnapbackImageView>(R.id.test)
 //        val builder = Zoomy.Builder(this).target(mZoomableView)
 //        builder.register()
 
@@ -46,11 +46,11 @@ class MainActivity : AppCompatActivity() {
 //            }
 //            false
 //        }
-//
-//        mZoomableView.setOnClickListener {
-//            Log.d("Main", "onCreate: Eyyo")
-//        }
-//
+
+        mZoomableView.setOnClickListener {
+            Log.d("Main", "onCreate: Eyyo")
+        }
+
 //        mZoomableView.setOnLongClickListener {
 //            Log.d("Main", "onCreate: Long Clicked")
 //            true

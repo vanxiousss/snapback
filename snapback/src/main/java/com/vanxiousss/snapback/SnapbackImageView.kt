@@ -59,6 +59,8 @@ class SnapbackImageView @JvmOverloads constructor(
     private var endAnimationDuration: Long = 300L
     private var placeholderDrawable: Drawable
 
+    private var isZooming = false
+
     private var endAction: (() -> Unit) = {
         removeFromDecorView(zoomableImageView!!)
         removeFromDecorView(shadow!!)
@@ -69,6 +71,7 @@ class SnapbackImageView @JvmOverloads constructor(
         shadow = null
         mInitialPinchMidPoint = PointF()
         state = ZoomState.Idle
+        isZooming = false
     }
 
     init {
@@ -125,6 +128,7 @@ class SnapbackImageView @JvmOverloads constructor(
 
                     ZoomState.PointerDown -> {
                         state = ZoomState.Zooming
+                        isZooming = true
                         midPointOfEvent(mInitialPinchMidPoint, event)
                         showZoomOverlay()
                     }
@@ -153,6 +157,7 @@ class SnapbackImageView @JvmOverloads constructor(
                     ZoomState.Zooming -> {
                         endZoomOverlay(endAction)
                         state = ZoomState.Idle
+                        return true // Consume the touch if zooming
                     }
 
                     ZoomState.PointerDown -> {
@@ -167,6 +172,17 @@ class SnapbackImageView @JvmOverloads constructor(
         }
 
         return super.onTouchEvent(event) || scaleHandled
+    }
+
+    override fun performClick(): Boolean {
+        // Only allow click if we didn't zoom
+        return if (isZooming) {
+            // Reset and suppress
+            isZooming = false
+            false
+        } else {
+            super.performClick()
+        }
     }
 
     override fun onScale(detector: ScaleGestureDetector): Boolean {
