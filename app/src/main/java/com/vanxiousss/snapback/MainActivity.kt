@@ -1,4 +1,4 @@
-package com.vanluong.snapback
+package com.vanxiousss.snapback
 
 import android.os.Bundle
 import android.util.Log
@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+
 
 class MainActivity : AppCompatActivity() {
     private lateinit var gestureDetector: GestureDetector
@@ -35,21 +36,24 @@ class MainActivity : AppCompatActivity() {
         })
 
         val mZoomableView = findViewById<SnapbackImageView>(R.id.test)
+//        val builder = Zoomy.Builder(this).target(mZoomableView)
+//        builder.register()
 
-        mZoomableView.setOnTouchListener { v, event ->
-            if (gestureDetector.onTouchEvent(event)) {
-                return@setOnTouchListener true
-            }
-            false
-        }
+
+//        mZoomableView.setOnTouchListener { v, event ->
+//            if (gestureDetector.onTouchEvent(event)) {
+//                return@setOnTouchListener true
+//            }
+//            false
+//        }
 
         mZoomableView.setOnClickListener {
             Log.d("Main", "onCreate: Eyyo")
         }
 
-        mZoomableView.setOnLongClickListener {
-            Log.d("Main", "onCreate: Long Clicked")
-            true
-        }
+//        mZoomableView.setOnLongClickListener {
+//            Log.d("Main", "onCreate: Long Clicked")
+//            true
+//        }
     }
 }

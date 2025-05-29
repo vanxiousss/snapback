@@ -8,5 +8,6 @@
         <attr name="shadowFadeEnabled" format="boolean" />
         <attr name="endAnimationEnabled" format="boolean" />
         <attr name="endAnimationDuration" format="integer" />
+        <attr name="placeholderDrawable" format="reference" />
     </declare-styleable>
 </resources>

@@ -1,10 +1,10 @@
-package com.vanluong.snapback
+package com.vanxiousss.snapback
 
-import android.app.Activity
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Point
 import android.graphics.PointF
+import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.MotionEvent.ACTION_CANCEL
@@ -19,6 +19,8 @@ import android.view.ViewGroup
 import android.view.ViewParent
 import android.widget.ImageView
 import androidx.appcompat.widget.AppCompatImageView
+import androidx.core.graphics.drawable.toDrawable
+import com.vanxiousss.snapback.extensions.findActivity
 import kotlin.math.max
 import kotlin.math.min
 
@@ -34,7 +36,7 @@ class SnapbackImageView @JvmOverloads constructor(
     private var shadow: View? = null
     private var zoomableImageView: ImageView? = null
     private val decorView: ViewGroup by lazy {
-        (context as Activity).window.decorView as ViewGroup
+        context.findActivity()?.window?.decorView as ViewGroup
     }
 
     private var mInitialPinchMidPoint = PointF()
@@ -55,16 +57,21 @@ class SnapbackImageView @JvmOverloads constructor(
     private var maxScaleFactor = MAX_SCALE_FACTOR
     private var endAnimationEnabled = true
     private var endAnimationDuration: Long = 300L
+    private var placeholderDrawable: Drawable
+
+    private var isZooming = false
 
     private var endAction: (() -> Unit) = {
         removeFromDecorView(zoomableImageView!!)
         removeFromDecorView(shadow!!)
-        visibility = VISIBLE
+        imageAlpha = 255
+        setImageDrawable(zoomableImageView!!.drawable)
 
         zoomableImageView = null
         shadow = null
         mInitialPinchMidPoint = PointF()
         state = ZoomState.Idle
+        isZooming = false
     }
 
     init {
@@ -98,6 +105,8 @@ class SnapbackImageView @JvmOverloads constructor(
                     R.styleable.SnapbackImageView_endAnimationDuration,
                     300
                 ).toLong()
+                placeholderDrawable = getDrawable(R.styleable.SnapbackImageView_placeholderDrawable)
+                    ?: Color.DKGRAY.toDrawable()
             } finally {
                 recycle()
             }
@@ -119,6 +128,7 @@ class SnapbackImageView @JvmOverloads constructor(
 
                     ZoomState.PointerDown -> {
                         state = ZoomState.Zooming
+                        isZooming = true
                         midPointOfEvent(mInitialPinchMidPoint, event)
                         showZoomOverlay()
                     }
@@ -147,6 +157,7 @@ class SnapbackImageView @JvmOverloads constructor(
                     ZoomState.Zooming -> {
                         endZoomOverlay(endAction)
                         state = ZoomState.Idle
+                        return true // Consume the touch if zooming
                     }
 
                     ZoomState.PointerDown -> {
@@ -161,6 +172,17 @@ class SnapbackImageView @JvmOverloads constructor(
         }
 
         return super.onTouchEvent(event) || scaleHandled
+    }
+
+    override fun performClick(): Boolean {
+        // Only allow click if we didn't zoom
+        return if (isZooming) {
+            // Reset and suppress
+            isZooming = false
+            false
+        } else {
+            super.performClick()
+        }
     }
 
     override fun onScale(detector: ScaleGestureDetector): Boolean {
@@ -206,11 +228,8 @@ class SnapbackImageView @JvmOverloads constructor(
     }
 
     private fun showZoomOverlay() {
-        zoomableImageView = ImageView(context).apply {
-            setImageDrawable(this@SnapbackImageView.drawable)
-            this.layoutParams =
-                ViewGroup.LayoutParams(this@SnapbackImageView.width, this@SnapbackImageView.height)
-        }
+        zoomableImageView = clone(context, this)
+        setImageDrawable(placeholderDrawable)
 
         mTargetViewCords = getViewAbsoluteCords(this)
         zoomableImageView!!.apply {
@@ -229,8 +248,6 @@ class SnapbackImageView @JvmOverloads constructor(
         shadow!!.setBackgroundResource(0)
 
         disableParentTouch(parent)
-        visibility = INVISIBLE
-
         addToDecorView(shadow!!)
         addToDecorView(zoomableImageView!!)
     }
@@ -295,6 +312,28 @@ class SnapbackImageView @JvmOverloads constructor(
             val y = location[1]
 
             return Point(x, y)
+        }
+
+        fun clone(context: Context, original: ImageView): ImageView {
+            return ImageView(context).apply {
+                layoutParams = original.layoutParams
+                setImageDrawable(original.drawable)
+                scaleType = original.scaleType
+                adjustViewBounds = original.adjustViewBounds
+                background = original.background
+                cropToPadding = original.cropToPadding
+                imageAlpha = original.imageAlpha
+                setPadding(
+                    original.paddingLeft,
+                    original.paddingTop,
+                    original.paddingRight,
+                    original.paddingBottom
+                )
+                contentDescription = original.contentDescription
+                colorFilter = original.colorFilter
+                isClickable = original.isClickable
+                isFocusable = original.isFocusable
+            }
         }
     }
 }
