@@ -4,15 +4,15 @@ plugins {
 }
 
 android {
-    namespace = "com.vanluong.snapback"
+    namespace = "com.vanxiousss.snapback"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.vanluong.snapback"
-        minSdk = 28
+        applicationId = "com.vanxiousss.snapback"
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

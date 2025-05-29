@@ -1,14 +1,15 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    `maven-publish`
 }
 
 android {
-    namespace = "com.vanluong.snapback"
+    namespace = "com.vanxiousss.snapback"
     compileSdk = 35
 
     defaultConfig {
-        minSdk = 28
+        minSdk = 26
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
@@ -29,6 +30,24 @@ android {
     }
     kotlinOptions {
         jvmTarget = "11"
+    }
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "com.vanxiousss"
+            artifactId = "snapback"
+            version = "1.0.0-RC1"
+
+            pom {
+
+            }
+
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
     }
 }
 
