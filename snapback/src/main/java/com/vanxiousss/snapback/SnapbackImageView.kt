@@ -1,6 +1,5 @@
 package com.vanxiousss.snapback
 
-import android.app.Activity
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Point
@@ -21,6 +20,7 @@ import android.view.ViewParent
 import android.widget.ImageView
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.graphics.drawable.toDrawable
+import com.vanxiousss.snapback.extensions.findActivity
 import kotlin.math.max
 import kotlin.math.min
 
@@ -36,7 +36,7 @@ class SnapbackImageView @JvmOverloads constructor(
     private var shadow: View? = null
     private var zoomableImageView: ImageView? = null
     private val decorView: ViewGroup by lazy {
-        (context as Activity).window.decorView as ViewGroup
+        context.findActivity()?.window?.decorView as ViewGroup
     }
 
     private var mInitialPinchMidPoint = PointF()
