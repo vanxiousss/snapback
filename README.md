@@ -1,6 +1,8 @@
 # Snapback ImageView
 An Instagram-like pinch-to-zoom Android ImageView with snap-back-to-original-position mechanism.
 
+https://github.com/user-attachments/assets/b12a53df-da9a-4426-b9f0-ef323e73f895
+
 ## Installation
 Add the dependency below into your **module**'s `build.gradle` file:
 ### Gradle
