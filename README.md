@@ -1,5 +1,3 @@
-![Artboard 1](https://github.com/user-attachments/assets/49e36bd8-7b37-4bd5-a5c2-7e20ab496a96)
-
 # Snapback ImageView
 An Instagram-like pinch-to-zoom Android ImageView with snap-back-to-original-position mechanism.
 
